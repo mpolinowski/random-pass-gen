@@ -2,7 +2,6 @@
 # Logs
 logs
 *.log
-package-lock.json
 npm-debug.log*
 
 # Runtime data
@@ -16,7 +15,7 @@ lib-cov
 # Dependency directories
 node_modules
 jspm_packages
-build
+package-lock.json
 
 # Optional npm cache directory
 .npm

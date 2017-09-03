@@ -5,7 +5,10 @@ const generatePassword = require('password-generator');
 const app = express();
 
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, 'client/build')));
+// app.use(express.static(path.join(__dirname, 'client/build')));
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static("client/build"));
+}
 
 // Put all API endpoints under '/api'
 app.get('/api/passwords', (req, res) => {

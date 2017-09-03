@@ -4,7 +4,9 @@
   "description": "create-react-app demo",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "node index.js",
+    "client": "node start-client.js"
   },
   "author": "Mike Polinowski",
   "license": "ISC",
@@ -12,7 +14,7 @@
     "express": "^4.15.4",
     "password-generator": "^2.1.0"
   },
-  "scripts": {
-    "start": "node index.js"
+  "devDependencies": {
+    "concurrently": "^3.5.0"
   }
 }

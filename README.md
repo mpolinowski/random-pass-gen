@@ -2,7 +2,7 @@
 
 This is a create-react-app demo based on the article [Create React App with Express in Production](https://daveceddia.com/create-react-app-express-production/) by Dave Ceddia. We want to use the React App generator to create static pages from our React Pass-Gen App, routed through a Node/Express Server.
 
-The original article went on to deploy the app to Heroku - please refer to the original article about that.
+The original article went on to deploy the app to Heroku - please refer to the original article about that. What we do differently here, is adding a way to comfortably edit (hot reloading) our app in an development environment using the package [Concurrently](https://github.com/kimmobrunfeldt/concurrently). This allows us to run both, the Express and React App, inside one terminal and automatically switch to serving a static representation of our React App inside Express, once we switch to a production environment.
 
 
 ## Create the Express App
@@ -29,7 +29,16 @@ const generatePassword = require('password-generator');
 const app = express();
 
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, 'client/build')));
+// Use this to just simulate a production environment - it always! serves the static files /client/build
+// ------------------------------------------------
+// app.use(express.static(path.join(__dirname, 'client/build')));
+// ------------------------------------------------
+// this statement will use the live react app in development,
+// but will expect you to have a static version of the app in /client/build once you switch to production
+// remove if above case is uncommented!
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static("client/build"));
+}
 
 // Put all API endpoints under '/api'
 app.get('/api/passwords', (req, res) => {
@@ -220,13 +229,86 @@ h1 {
 }
 ```
 
-When you restart your app now (inside the client director), you will see our Password Generator in all it's glory on *localhost:3000*. Stop your app again and run:
+When you restart your app now (inside the client director), you will see our Password Generator in all it's glory on *localhost:3000*.
+
+
+## Concurrently
+
+Our React app (on Port 3000) is already proxying to our Express App (on Port 5000). But we would have to use two terminals to run both apps at once - which is something you can try now, if you like. Our React app is already up. Now open a second terminal inside the top-level directory and **npm start** the express app. When you open your browser on Port 5000, you will see our app!
+
+This setup is nice, because it allows you to edit your app and have it hot-reloading inside your browser!
+
+But we want to have this dev-environment run with a single command. As well as have our app decide whether to serve directly from the React App or look for a static build instead, based on the NODE_ENV (Production or Development). This is where [Concurrently](https://github.com/kimmobrunfeldt/concurrently) comes to the rescue. We already explained how this works [here](https://github.com/mpolinowski/caloric-burn#concurrently) - so we don't have to go into too much details.
+
+We first have to install the package on the top-level directory:
+
+```
+npm install --save-dev concurrently
+```
+
+Then add npm start scripts to the top-level package.json file:
+
+```
+"scripts": {
+  "start-dev": "concurrently \"npm run server\" \"npm run client\"",
+  "server": "node index.js",
+  "client": "node start-client.js",
+  "start": "node index.js"
+},
+```
+
+And add the **start-client.js** file to start our React app from the top-level:
+
+```js
+const args = [ 'start' ];
+const opts = { stdio: 'inherit', cwd: 'client', shell: true };
+require('child_process').spawn('npm', args, opts);
+```
+
+Now run **npm start** in the top level and you will see that both the Express App and React App will be started:
+
+```
+$ npm start
+
+> random-pass-gen@1.0.0 start E:\random-pass-gen
+> concurrently "npm run server" "npm run client"
+...
+Password generator listening on 5000
+...
+Starting the development server...
+You can now view client in the browser.
+http://localhost:3000/
+```
+
+
+## Create Static Version of our React App
+
+Make sure that you are inside the */client* directory and execute:
 
 ```
 npm run build
 ```
 
-Which is a command that was defined by create-react-app (**react-scripts**) inside */client/package.json*. It will create a optimized static version of our app inside */client/build*. This is the folder that we already told our Express App (see index.js in the top-level directory) would contain our static content. So by opening our Express App on port 5000 we will have our Express App serving our React App as static content:
+which is a command that was defined by create-react-app (**react-scripts**) inside */client/package.json*. It will create a optimized static version of our app inside */client/build*. This is the folder that we already told our Express App (see index.js in the top-level directory) would contain our static content. To test if the static content is served correctly by our Express App, just set your NODE_ENV to production - or just comment out the following inside */index.js*:
+
+```js
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static("client/build"));
+}
+```
+and use this statement instead:
+
+```js
+app.use(express.static(path.join(__dirname, 'client/build')));
+```
+
+So by opening our Express App on port 5000 we will have our Express App serving our React App as static content from the /build folder:
+
+```
+npm run server
+```
+
+You can access it from your browser:
 
 ```
  http://localhost:3000
